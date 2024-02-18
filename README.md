@@ -24,7 +24,6 @@ Open a web browser and navigate to `http://localhost` to view the slideshow.
 google-photos-slideshow --help
 ```
 
-
 ### Features
 #### Slideshow
   * [x] Play/Pause
@@ -88,6 +87,7 @@ google-photos-slideshow --help
     * [x] basic quickstart
     * [ ] Quickstart with photos
     * [ ] Show photos of end product
+    * [x] Feature plan 
   * Python
     * [x] argparse commandline `--help`
     * [x] some docstrings
