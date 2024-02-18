@@ -31,7 +31,7 @@ google-photos-slideshow --help
   * [x] Next/Previous
   * [x] Live Communal Controls
   * [x] Live reload from source
-  * [ ] Link to photo source
+  * [x] Link to photo source
   * [ ] Autoplay videos
   * [ ] Add music
 #### Support for multiple photo sources
@@ -62,7 +62,7 @@ google-photos-slideshow --help
   * [x] Don't cut off photos
   * [x] Better icons
   * [x] Improve speed control (vertical select 0.125x(0.5s), 0.25x (1s), 0.5x (2s), 1x (4s), 2x (8s), 4x (16s))
-  * [ ] Page title from photo source
+  * [x] Page title from photo source
   * [ ] Support fullscreen (and exit fullscreen)
   * [ ] preview carousel
   * [ ] Chromecast support
