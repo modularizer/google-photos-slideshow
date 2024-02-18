@@ -99,13 +99,27 @@
             }
         }
 
+        a {
+            color: blue;
+        }
+
         /* Utility Classes */
         .hidden {
             display: none;
         }
+
+        .external-link::after {
+            content: '\f35d'; /* This is the Unicode for Font Awesome's external link icon */
+            font-family: 'Font Awesome 5 Free'; /* Specify the font family */
+            font-weight: 900; /* Font Awesome 5 requires this for solid icons */
+            padding-left: 0.5em; /* Add some space between the text and the icon */
+            font-size: 0.75em; /* Adjust the size of the icon */
+        }
+
     </style>
 </head>
 <body>
+    <a id="source" target="_blank"  class="external-link"></a>
     <div id="container">
         <img id="slideshow" src="" alt="Slideshow Image">
     </div>
@@ -139,6 +153,7 @@
                 this.speedSelectEl = document.getElementById('speed-select');
                 this.speedDropdownEl = document.getElementById('speed-dropdown');
                 this.slideshowEl = document.getElementById('slideshow');
+                this.sourceEl = document.getElementById('source');
 
                 let faviconLink = document.querySelector('link[rel="icon"]');
                 if (!faviconLink) {
@@ -172,6 +187,11 @@
                     this.pause(false);
                 }else if (data.action === 'play') {
                     this.play(false);
+                } else if (data.action === 'title') {
+                    document.title = data.title;
+                    this.sourceEl.innerHTML = data.title;
+                } else if (data.action === 'source'){
+                    this.sourceEl.href = data.source;
                 }else{
                     this.setUrl(data.url);
                 }
