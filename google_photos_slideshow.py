@@ -6,6 +6,7 @@ import signal
 import socket
 import time
 import logging
+from abc import ABC, abstractmethod
 from pathlib import Path
 import argparse
 
@@ -17,22 +18,28 @@ logger = logging.getLogger("slideshow")
 logger.setLevel(logging.INFO)
 
 
-class Slideshow:
+class Slideshow(ABC):
     """Make a live slideshow from a publicly shared google photos album"""
+    default_title = "Google Photos Slideshow"
+    default_image_duration = 4
+    default_refresh_interval = 5
+    default_host = 'localhost'
+    default_websocket_port = 6789
+    default_port = 80
+
     def __init__(self,
                  url,
-                 image_duration=4,
-                 refresh_interval=5,
-                 regex=r'https:\/\/lh3\.googleusercontent\.com\/pw\/[a-zA-Z0-9_\-\/]+',
-                 host='localhost',
-                 websocket_port=6789,
-                 port=80):
+                 title=default_title,
+                image_duration=default_image_duration,
+                refresh_interval=default_refresh_interval,
+                host=default_host,
+                websocket_port=default_websocket_port,
+                port=default_port):
         self.host = host
         self.websocket_port = websocket_port
         self.port = port
         self.url = url
         self.refresh_interval = refresh_interval
-        self.regex = regex
         self.urls = []
         self.last_url = []
         self.current_index = 0
@@ -41,27 +48,11 @@ class Slideshow:
         self.last_refresh = time.time()
         self.speed = 1
         self.image_duration = image_duration  # Time in seconds for each image
+        self.title = title
 
+    @abstractmethod
     async def _fetch_urls(self):
-        """Fetch urls from the google photos link and store them in self.urls"""
-        async with aiohttp.ClientSession() as session:
-            async with session.get(self.url) as response:
-                text = await response.text()
-                urls = list(set(re.findall(self.regex, text)))
-                new_urls = [url for url in urls if url not in self.urls]
-                removed_urls = [url for url in self.urls if url not in urls]
-                random.shuffle(new_urls)
-
-                # insert new urls at the current index
-                self.urls = self.urls[:self.current_index] + new_urls + self.urls[self.current_index:]
-
-                # pop removed urls, if they already passed, decrement the current index
-                for url in removed_urls:
-                    if url in self.urls:
-                        if self.current_index > self.urls.index(url):
-                            self.current_index -= 1
-                        self.urls.remove(url)
-                self.last_refresh = time.time()
+        pass
 
     async def _next_url(self):
         """Get the next url in the list of urls"""
@@ -95,6 +86,8 @@ class Slideshow:
             await websocket.send(json.dumps({'action': 'pause'}))
         else:
             await websocket.send(json.dumps({'action': 'play'}))
+        await websocket.send(json.dumps({'action': 'source', 'source': self.url}))
+        await websocket.send(json.dumps({'action': 'title', 'title': self.title}))
 
     async def _unregister(self, websocket):
         """Remove a client from the list of clients"""
@@ -190,6 +183,89 @@ class Slideshow:
         asyncio.get_event_loop().stop()
 
 
+class RegexSlideshow(Slideshow):
+    default_parse_title = True
+    default_title_regex = r'<title>([^<]+)</title>'
+    default_image_regex = f'<img src="([^"]+)"'
+
+    def __init__(self,
+                 url,
+                 regex,
+                 title=Slideshow.default_title,
+                 parse_title=default_parse_title,
+                 title_regex=default_title_regex,
+                 image_duration=Slideshow.default_image_duration,
+                 refresh_interval=Slideshow.default_refresh_interval,
+                 host=Slideshow.default_host,
+                 websocket_port=Slideshow.default_websocket_port,
+                 port=Slideshow.default_port):
+        self.regex = regex
+        self.parse_title = parse_title
+        self.title_regex = title_regex
+        super().__init__(url,
+                         title=title, image_duration=image_duration, refresh_interval=refresh_interval,
+                         host=host, websocket_port=websocket_port, port=port)
+
+    async def _fetch_urls(self):
+        """Fetch urls from the google photos link and store them in self.urls"""
+        async with aiohttp.ClientSession() as session:
+            async with session.get(self.url) as response:
+                text = await response.text()
+                if self.parse_title:
+                    title = re.search(self.title_regex, text)
+                    if title:
+                        title = title.group(1)
+                        if title != self.title:
+                            logger.info(f"New Title: {title}")
+                            self.title = title
+                            await self._send_to_all(json.dumps({'action': 'title', 'title': self.title}))
+                urls = list(set(re.findall(self.regex, text)))
+                new_urls = [url for url in urls if url not in self.urls]
+                if new_urls:
+                    logger.info(f"found {len(new_urls)} new urls")
+                removed_urls = [url for url in self.urls if url not in urls]
+                if removed_urls:
+                    logger.info(f"removed {len(removed_urls)} urls")
+                random.shuffle(new_urls)
+
+                # insert new urls at the current index
+                self.urls = self.urls[:self.current_index] + new_urls + self.urls[self.current_index:]
+
+                # pop removed urls, if they already passed, decrement the current index
+                for url in removed_urls:
+                    if url in self.urls:
+                        if self.current_index > self.urls.index(url):
+                            self.current_index -= 1
+                        self.urls.remove(url)
+                self.last_refresh = time.time()
+
+
+class GooglePhotosSlideshow(RegexSlideshow):
+    default_regex = r'https:\/\/lh3\.googleusercontent\.com\/pw\/[a-zA-Z0-9_\-\/]+'
+
+    def __init__(self,
+                 url,
+                 regex=default_regex,
+                 title=Slideshow.default_title,
+                 parse_title=RegexSlideshow.default_parse_title,
+                 title_regex=RegexSlideshow.default_title_regex,
+                 image_duration=Slideshow.default_image_duration,
+                 refresh_interval=Slideshow.default_refresh_interval,
+                 host=Slideshow.default_host,
+                 websocket_port=Slideshow.default_websocket_port,
+                 port=Slideshow.default_port):
+        super().__init__(url,
+                        regex,
+                        title=title,
+                        parse_title=parse_title,
+                        title_regex=title_regex,
+                        image_duration=image_duration,
+                        refresh_interval=refresh_interval,
+                        host=host,
+                        websocket_port=websocket_port,
+                        port=port)
+
+
 def main():
     # use argparse to parse command line arguments
     parser = argparse.ArgumentParser(description="Make a live slideshow from a publicly shared google photos album")
@@ -220,7 +296,7 @@ def main():
     url_path.write_text(url)
 
     # start the slideshow
-    s = Slideshow(url,
+    s = GooglePhotosSlideshow(url,
                   image_duration=args.image_duration,
                   refresh_interval=args.refresh_interval,
                   regex=args.regex,
