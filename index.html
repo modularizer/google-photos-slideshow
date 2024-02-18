@@ -138,6 +138,7 @@
             </div>
 
         </div>
+        <button id="fullscreen-toggle" onclick="toggleFullscreen()"><i class="fas fa-expand"></i></button>
 
     </div>
 
@@ -154,6 +155,9 @@
                 this.speedDropdownEl = document.getElementById('speed-dropdown');
                 this.slideshowEl = document.getElementById('slideshow');
                 this.sourceEl = document.getElementById('source');
+                this.containerEl = document.getElementById('container');
+                this.fullscreenToggleEl = document.getElementById('fullscreen-toggle');
+
 
                 let faviconLink = document.querySelector('link[rel="icon"]');
                 if (!faviconLink) {
@@ -174,6 +178,16 @@
                 this.closeDropdown = this.closeDropdown.bind(this);
                 this.fadeIn = this.fadeIn.bind(this);
                 this.setUrl = this.setUrl.bind(this);
+                this.toggleFullscreen = this.toggleFullscreen.bind(this);
+                this.onFullscreenChange = this.onFullscreenChange.bind(this);
+                this.onKeydown = this.onKeydown.bind(this);
+
+
+                this.fullscreenToggleEl.addEventListener('click', this.toggleFullscreen);
+
+                document.addEventListener('fullscreenchange', this.onFullscreenChange);
+                document.addEventListener('keydown', this.onKeydown);
+
                 this.ws.onmessage = this.onmessage.bind(this);
 
                 window.addEventListener('click', this.closeDropdown);
@@ -259,6 +273,30 @@
                     this.fadeIn();
                 }, 500); // Delay can be adjusted as needed
             }
+            toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    this.containerEl.requestFullscreen().catch(err => {
+                        console.error(`Error attempting to enable fullscreen mode: ${err.message} (${err.name})`);
+                    });
+                } else if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+            onFullscreenChange() {
+                if (document.fullscreenElement) {
+                    this.fullscreenToggleEl.innerHTML = '<i class="fas fa-compress"></i>'; // Change to compress icon when in fullscreen
+                } else {
+                    this.fullscreenToggleEl.innerHTML = '<i class="fas fa-expand"></i>'; // Change back to expand icon when not in fullscreen
+                }
+            }
+
+            onKeydown(event) {
+                if (event.key === "Escape" && document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+            }
+
+
         }
 
         let ws = new WebSocket("ws://" + location.host + ":6789/");

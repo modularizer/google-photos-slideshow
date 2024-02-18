@@ -63,7 +63,7 @@ google-photos-slideshow --help
   * [x] Better icons
   * [x] Improve speed control (vertical select 0.125x(0.5s), 0.25x (1s), 0.5x (2s), 1x (4s), 2x (8s), 4x (16s))
   * [x] Page title from photo source
-  * [ ] Support fullscreen (and exit fullscreen)
+  * [x] Support fullscreen (and exit fullscreen)
   * [ ] preview carousel
   * [ ] Chromecast support
 #### Upload Options
