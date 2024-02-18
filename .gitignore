@@ -1,3 +1,4 @@
 url.txt
 .*
 venv
+*.egg-info

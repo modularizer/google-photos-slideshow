@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "google-photos-slideshow"
+version = "0.0.1"
+description = "A communal live photo slideshow for Google Photos"
+readme = "README.md"
+authors = [{ name = "Torin Halsted", email = "modularizer@gmail.com" }]
+license = { file = "LICENSE" }
+keywords = ["google", "photos", "slideshow", "live", "photo", "frame"]
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "aiohttp",
+    "websockets"
+]
+
+[project.urls]
+Homepage = "https://github.com/modularizer/google-photos-slideshow"
+
+[project.scripts]
+google-photos-slideshow = "google_photos_slideshow:main"
+
+
