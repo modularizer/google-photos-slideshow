@@ -27,7 +27,7 @@
             height: 100%; /* Set height to fill the container */
             object-fit: contain; /* Fit the image within the container without cropping */
             opacity: 0; /* Start fully transparent */
-            transition: opacity 1s ease-in-out; /* Short transition effect for opacity */
+            transition: opacity 0.5s ease-in-out; /* Short transition effect for opacity */
         }
 
         #controls {
@@ -73,27 +73,40 @@
         <button onclick="play()" class="hidden">Play</button>
         <button onclick="action('next')">Next</button>
         <br/>
-        <label for="speed">Speed:</label><input id="speed" type="range" min="1" max="10" value="5" oninput="action('speed', 10/this.value)">
+        <label for="speed">Speed:</label><input id="speed" type="range" min="1" max="10" value="5" oninput="action('speed', 20/this.value)">
     </div>
 
     <script>
         var ws = new WebSocket("ws://" + location.host + ":6789/");
         ws.onmessage = function(event) {
             var data = JSON.parse(event.data);
-            var slideshow = document.getElementById("slideshow");
+            if (data.action === 'speed') {
+                let s = Math.round(20 / data.speed);
+                console.log(data, s);
+                document.getElementById('speed').value = s;
+            }else if (data.action === 'pause') {
+                document.querySelector('button[onclick="pause()"]').classList.add('hidden');
+                document.querySelector('button[onclick="play()"]').classList.remove('hidden');
+            }else if (data.action === 'play') {
+                document.querySelector('button[onclick="play()"]').classList.add('hidden');
+                document.querySelector('button[onclick="pause()"]').classList.remove('hidden');
+            }else{
+                var slideshow = document.getElementById("slideshow");
 
-            // Function to fade in the image
-            function fadeIn() {
-                slideshow.style.opacity = 1;
+                // Function to fade in the image
+                function fadeIn() {
+                    slideshow.style.opacity = 1;
+                }
+
+                // Reset opacity and set up a slight delay before changing the src
+                slideshow.style.opacity = 0;
+                setTimeout(() => {
+                    slideshow.src = data.url;
+                    // Use the 'onload' event to ensure the image fades in after it's fully loaded
+                    slideshow.onload = fadeIn;
+                }, 500); // Delay can be adjusted as needed
+
             }
-
-            // Reset opacity and set up a slight delay before changing the src
-            slideshow.style.opacity = 0;
-            setTimeout(() => {
-                slideshow.src = data.url;
-                // Use the 'onload' event to ensure the image fades in after it's fully loaded
-                slideshow.onload = fadeIn;
-            }, 100); // Delay can be adjusted as needed
         };
 
         function action(action, value = null) {

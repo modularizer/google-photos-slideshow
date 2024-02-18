@@ -21,7 +21,7 @@ class Slideshow:
     """Make a live slideshow from a publicly shared google photos album"""
     def __init__(self,
                  url,
-                 image_duration=2,
+                 image_duration=4,
                  refresh_interval=5,
                  regex=r'https:\/\/lh3\.googleusercontent\.com\/pw\/[a-zA-Z0-9_\-\/]+',
                  host='localhost',
@@ -88,6 +88,12 @@ class Slideshow:
     async def _register(self, websocket):
         """Register a new client to the list of clients"""
         self.clients.add(websocket)
+        websocket.send(json.dumps({'url': self.urls[self.current_index]}))
+        websocket.send(json.dumps({'action': 'speed', 'speed': self.image_duration}))
+        if self.paused:
+            websocket.send(json.dumps({'action': 'pause'}))
+        else:
+            websocket.send(json.dumps({'action': 'play'}))
 
     async def _unregister(self, websocket):
         """Remove a client from the list of clients"""
@@ -104,11 +110,18 @@ class Slideshow:
                 elif data['action'] == 'previous':
                     await self._send_to_all(json.dumps({'url': await self._previous_url()}))
                 elif data['action'] == 'pause':
-                    self.paused = True
+                    if not self.paused:
+                        self.paused = True
+                        await self._send_to_all(json.dumps({'action': 'pause'}))
                 elif data['action'] == 'play':
-                    self.paused = False
+                    if self.paused:
+                        self.paused = False
+                        await self._send_to_all(json.dumps({'action': 'play'}))
                 elif data['action'] == 'speed':
-                    self.image_duration = float(data['value'])
+                    d = float(data['value'])
+                    if d != self.image_duration:
+                        self.image_duration = d
+                        await self._send_to_all(json.dumps({'action': 'speed', 'speed': self.image_duration}))
         finally:
             await self._unregister(websocket)
         await asyncio.sleep(0.1)
@@ -176,7 +189,7 @@ def main():
     parser = argparse.ArgumentParser(description="Make a live slideshow from a publicly shared google photos album")
     parser.add_argument("--port", type=int, default=80, help="The port for the http server")
     parser.add_argument("--url", help="The google photos album link", type=str, default=None)
-    parser.add_argument("--image-duration", type=float, default=2, help="Time in seconds for each image")
+    parser.add_argument("--image-duration", type=float, default=4, help="Time in seconds for each image")
     parser.add_argument("--refresh-interval", type=int, default=5, help="Time in seconds to refresh the album link")
     parser.add_argument("--regex", default=r'https:\/\/lh3\.googleusercontent\.com\/pw\/[a-zA-Z0-9_\-\/]+', help="The regex to match the image urls")
     parser.add_argument("--host", default='0.0.0.0', help="The host to serve the slideshow")
