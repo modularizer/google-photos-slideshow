@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Google Photos Slideshow</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <style>
+        /* Global Styles */
         body, html {
             margin: 2em;
             padding: 0;
@@ -61,14 +63,14 @@
         }
 
         .speed-dropdown {
-    display: none; /* Initially hide dropdown */
-    position: absolute;
-    bottom: 100%; /* Position it above the speed select */
-    left: 0;
-    background-color: #555;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    z-index: 1;
-}
+            display: none; /* Initially hide dropdown */
+            position: absolute;
+            bottom: 100%; /* Position it above the speed select */
+            left: 0;
+            background-color: #555;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
 
 
         .speed-dropdown div {
@@ -82,7 +84,7 @@
             background-color: #666;
         }
 
-
+        /* Responsive Adjustments */
         @media (max-width: 1000px) {
             #slideshow {
                 object-fit: contain; /* Cover the container area, may crop the image */
@@ -97,7 +99,7 @@
             }
         }
 
-
+        /* Utility Classes */
         .hidden {
             display: none;
         }
@@ -108,18 +110,17 @@
         <img id="slideshow" src="" alt="Slideshow Image">
     </div>
     <div id="controls">
-        <button onclick="action('previous')"><i class="fas fa-backward"></i></button>
-        <button onclick="pause()"><i class="fas fa-pause"></i></button>
-        <button onclick="play()" class="hidden"><i class="fas fa-play"></i></button>
-        <button onclick="action('next')"><i class="fas fa-forward"></i></button>
-        <div id="speed-select" onclick="toggleSpeedDropdown()">1x
+        <button id = "previous" onclick="slideshow.action('previous')"><i class="fas fa-backward"></i></button>
+        <button id="pause" onclick="slideshow.pause()"><i class="fas fa-pause"></i></button>
+        <button id="play" onclick="slideshow.play()" class="hidden"><i class="fas fa-play"></i></button>
+        <button id="next" onclick="slideshow.action('next')"><i class="fas fa-forward"></i></button>
+        <div id="speed-select" onclick="slideshow.toggleSpeedDropdown()">1x
             <div id="speed-dropdown" class="speed-dropdown">
-                <div onclick="setSpeed(0.125)">0.125x</div>
-                <div onclick="setSpeed(0.25)">0.25x</div>
-                <div onclick="setSpeed(0.5)">0.5x</div>
-                <div onclick="setSpeed(1)">1x <i class="fas fa-check"></i></div> <!-- 1x is default -->
-                <div onclick="setSpeed(2)">2x</div>
-                <div onclick="setSpeed(4)">4x</div>
+                <div onclick="slideshow.setSpeed(0.25)">0.25x</div>
+                <div onclick="slideshow.setSpeed(0.5)">0.5x</div>
+                <div onclick="slideshow.setSpeed(1)">1x <i class="fas fa-check"></i></div> <!-- 1x is default -->
+                <div onclick="slideshow.setSpeed(2)">2x</div>
+                <div onclick="slideshow.setSpeed(4)">4x</div>
             </div>
 
         </div>
@@ -128,95 +129,120 @@
 
 
     <script>
-        function updateFavicon(imageUrl) {
-    let faviconLink = document.querySelector('link[rel="icon"]');
-    if (!faviconLink) {
-        faviconLink = document.createElement('link');
-        faviconLink.rel = 'icon';
-        document.head.appendChild(faviconLink);
-    }
-    faviconLink.href = imageUrl;
-}
+        class Slideshow{
+            constructor(ws){
+                this.ws = ws;
+                this.previousEl = document.getElementById('previous');
+                this.pauseEl = document.getElementById('pause');
+                this.playEl = document.getElementById('play');
+                this.nextEl = document.getElementById('next');
+                this.speedSelectEl = document.getElementById('speed-select');
+                this.speedDropdownEl = document.getElementById('speed-dropdown');
+                this.slideshowEl = document.getElementById('slideshow');
 
-        var ws = new WebSocket("ws://" + location.host + ":6789/");
-        ws.onmessage = function(event) {
-            var data = JSON.parse(event.data);
-            if (data.action === 'speed') {
-                let s = Math.round(20 / data.speed);
-                console.log(data, s);
-                document.getElementById('speed').value = s;
-            }else if (data.action === 'pause') {
-                document.querySelector('button[onclick="pause()"]').classList.add('hidden');
-                document.querySelector('button[onclick="play()"]').classList.remove('hidden');
-            }else if (data.action === 'play') {
-                document.querySelector('button[onclick="play()"]').classList.add('hidden');
-                document.querySelector('button[onclick="pause()"]').classList.remove('hidden');
-            }else{
-                var slideshow = document.getElementById("slideshow");
-
-                // Function to fade in the image
-                function fadeIn() {
-                    slideshow.style.opacity = 1;
+                let faviconLink = document.querySelector('link[rel="icon"]');
+                if (!faviconLink) {
+                    faviconLink = document.createElement('link');
+                    faviconLink.rel = 'icon';
+                    document.head.appendChild(faviconLink);
                 }
+                this.faviconEl = faviconLink;
 
+                this.updateFavicon = this.updateFavicon.bind(this);
+                this.action = this.action.bind(this);
+                this.pause = this.pause.bind(this);
+                this.play = this.play.bind(this);
+                this.next = this.next.bind(this);
+                this.previous = this.previous.bind(this);
+                this.setSpeed = this.setSpeed.bind(this);
+                this.toggleSpeedDropdown = this.toggleSpeedDropdown.bind(this);
+                this.closeDropdown = this.closeDropdown.bind(this);
+                this.fadeIn = this.fadeIn.bind(this);
+                this.setUrl = this.setUrl.bind(this);
+                this.ws.onmessage = this.onmessage.bind(this);
+
+                window.addEventListener('click', this.closeDropdown);
+            }
+            onmessage (event) {
+                console.warn(event.data);
+                var data = JSON.parse(event.data);
+                if (data.action === 'speed') {
+                    this.setSpeed(data.speed);
+                }else if (data.action === 'pause') {
+                    this.pause(false);
+                }else if (data.action === 'play') {
+                    this.play(false);
+                }else{
+                    this.setUrl(data.url);
+                }
+            }
+            updateFavicon(imageUrl) {
+                /* Update the favicon (tab icon) to the current image */
+                this.faviconEl.href = imageUrl;
+            }
+            action(action, value = null) {
+                this.ws.send(JSON.stringify({action, value}));
+            }
+            pause(send = true) {
+                if (send){
+                    this.action('pause');
+                }
+                this.pauseEl.classList.add('hidden');
+                this.playEl.classList.remove('hidden');
+            }
+            play(send = true) {
+                if (send){
+                    this.action('play');
+                }
+                this.playEl.classList.add('hidden');
+                this.pauseEl.classList.remove('hidden');
+            }
+            next() {
+                this.action('next');
+            }
+            previous() {
+                this.action('previous');
+            }
+            setSpeed(speed) {
+                this.action('speed', speed);
+                this.speedSelectEl.childNodes[0].nodeValue = speed + 'x'; // Update the display to the selected speed
+                // Update dropdown options to show a checkmark next to the selected speed
+                const options = this.speedDropdownEl.children;
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].innerHTML == speed + 'x') {
+                        options[i].innerHTML += ' <i class="fas fa-check"></i>'; // Add checkmark next to selected speed
+                    }else{
+                        options[i].innerHTML = options[i].innerHTML.replace(' <i class="fas fa-check"></i>', ''); // Remove checkmark from other speeds
+                    }
+                }
+                this.closeDropdown(); // Close the dropdown after selection
+            }
+            toggleSpeedDropdown() {
+                this.speedDropdownEl.style.display = this.speedDropdownEl.style.display === "block" ? "none" : "block";
+            }
+            closeDropdown(event) {
+                if (!event.target.matches('#speed-select')) {
+                    this.speedDropdownEl.style.display = "none";
+                }
+            }
+
+            fadeIn() {
+                this.slideshowEl.style.opacity = 1;
+            }
+            setUrl(url){
                 // Reset opacity and set up a slight delay before changing the src
-                slideshow.style.opacity = 0;
+                this.slideshowEl.style.opacity = 0;
                 setTimeout(() => {
-                    slideshow.src = data.url;
-                    updateFavicon(data.url);
+                    this.slideshowEl.src = url;
+                    this.updateFavicon(url);
                     // Use the 'onload' event to ensure the image fades in after it's fully loaded
-                    slideshow.onload = fadeIn;
+                    this.fadeIn();
                 }, 500); // Delay can be adjusted as needed
-
-            }
-        };
-
-        function action(action, value = null) {
-            ws.send(JSON.stringify({action, value}));
-        }
-        function pause() {
-            action('pause');
-            document.querySelector('button[onclick="pause()"]').classList.add('hidden');
-            document.querySelector('button[onclick="play()"]').classList.remove('hidden');
-        }
-        function play() {
-            action('play');
-            document.querySelector('button[onclick="play()"]').classList.add('hidden');
-            document.querySelector('button[onclick="pause()"]').classList.remove('hidden');
-        }
-
-        function toggleSpeedDropdown() {
-    var dropdown = document.getElementById("speed-dropdown");
-    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
-}
-
-function setSpeed(speed) {
-    action('speed', speed);
-    document.getElementById("speed-select").childNodes[0].nodeValue = speed + 'x'; // Update the display to the selected speed
-    // Update dropdown options to show a checkmark next to the selected speed
-    const options = document.getElementById("speed-dropdown").children;
-    for (let i = 0; i < options.length; i++) {
-        options[i].innerHTML = options[i].getAttribute('value') + 'x';
-        if (options[i].getAttribute('value') == speed) {
-            options[i].innerHTML += ' <i class="fas fa-check"></i>'; // Add checkmark next to selected speed
-        }
-    }
-    toggleSpeedDropdown(); // Close the dropdown after selection
-}
-
-
-// Close the dropdown if the user clicks outside of it
-window.onclick = function(event) {
-    if (!event.target.matches('#speed-select')) {
-        var dropdowns = document.getElementsByClassName("speed-dropdown");
-        for (var i = 0; i < dropdowns.length; i++) {
-            var openDropdown = dropdowns[i];
-            if (openDropdown.style.display === "block") {
-                openDropdown.style.display = "none";
             }
         }
-    }
-}
+
+        let ws = new WebSocket("ws://" + location.host + ":6789/");
+        let slideshow = new Slideshow(ws);
     </script>
 
 </body>

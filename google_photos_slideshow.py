@@ -39,6 +39,7 @@ class Slideshow:
         self.clients = set()
         self.paused = False
         self.last_refresh = time.time()
+        self.speed = 1
         self.image_duration = image_duration  # Time in seconds for each image
 
     async def _fetch_urls(self):
@@ -88,12 +89,12 @@ class Slideshow:
     async def _register(self, websocket):
         """Register a new client to the list of clients"""
         self.clients.add(websocket)
-        websocket.send(json.dumps({'url': self.urls[self.current_index]}))
-        websocket.send(json.dumps({'action': 'speed', 'speed': self.image_duration}))
+        await websocket.send(json.dumps({'url': self.urls[self.current_index]}))
+        await websocket.send(json.dumps({'action': 'speed', 'speed': self.speed}))
         if self.paused:
-            websocket.send(json.dumps({'action': 'pause'}))
+            await websocket.send(json.dumps({'action': 'pause'}))
         else:
-            websocket.send(json.dumps({'action': 'play'}))
+            await websocket.send(json.dumps({'action': 'play'}))
 
     async def _unregister(self, websocket):
         """Remove a client from the list of clients"""
@@ -106,22 +107,27 @@ class Slideshow:
             async for message in websocket:
                 data = json.loads(message)
                 if data['action'] == 'next':
+                    logger.info("next")
                     await self._send_to_all(json.dumps({'url': await self._next_url()}))
                 elif data['action'] == 'previous':
+                    logger.info("previous")
                     await self._send_to_all(json.dumps({'url': await self._previous_url()}))
                 elif data['action'] == 'pause':
                     if not self.paused:
                         self.paused = True
+                        logger.warning("pause")
                         await self._send_to_all(json.dumps({'action': 'pause'}))
                 elif data['action'] == 'play':
                     if self.paused:
                         self.paused = False
+                        logger.warning("play")
                         await self._send_to_all(json.dumps({'action': 'play'}))
                 elif data['action'] == 'speed':
-                    d = float(data['value'])
-                    if d != self.image_duration:
-                        self.image_duration = d
-                        await self._send_to_all(json.dumps({'action': 'speed', 'speed': self.image_duration}))
+                    if self.speed != float(data['value']):
+                        self.image_duration = 4/float(data['value'])
+                        self.speed = float(data['value'])
+                        logger.warning(f"speed changed to {self.speed} ({self.image_duration}s)")
+                        await self._send_to_all(json.dumps({'action': 'speed', 'speed': self.speed}))
         finally:
             await self._unregister(websocket)
         await asyncio.sleep(0.1)
@@ -153,19 +159,19 @@ class Slideshow:
         site = web.TCPSite(runner, self.host, self.port)
         await site.start()
         p = f":{self.port}" if self.port != 80 else ""
-        logger.info(f"Open your browser and go to http://{self.host}{p}")
+        logger.warning(f"Open your browser and go to http://{self.host}{p}")
 
         local_ip = socket.gethostbyname(socket.gethostname())
-        logger.info(f"Or go to http://{local_ip}{p} if you are on the same network")
+        logger.warning(f"Or go to http://{local_ip}{p} if you are on the same network")
 
-        logger.info(f"Ctr+C to stop the server")
+        logger.warning(f"Ctr+C to stop the server")
 
     def serve(self):
         # attach cleanup handler for graceful shutdown on Ctrl+C
         signal.signal(signal.SIGINT, lambda s, f: self.cleanup())
         signal.signal(signal.SIGTERM, lambda s, f: self.cleanup())
 
-        logger.info(f"Starting websocket server at {self.host}:{self.websocket_port}")
+        logger.warning(f"Starting websocket server at {self.host}:{self.websocket_port}")
         start_server = websockets.serve(self.websocket_handler, self.host, self.websocket_port)
         # start the http server using asyncio
         # Start both WebSocket and HTTP servers
@@ -180,7 +186,7 @@ class Slideshow:
 
     def cleanup(self):
         """Cleanup the servers"""
-        logger.info("Cleaning up servers")
+        logger.warning("Cleaning up servers")
         asyncio.get_event_loop().stop()
 
 
@@ -194,12 +200,16 @@ def main():
     parser.add_argument("--regex", default=r'https:\/\/lh3\.googleusercontent\.com\/pw\/[a-zA-Z0-9_\-\/]+', help="The regex to match the image urls")
     parser.add_argument("--host", default='0.0.0.0', help="The host to serve the slideshow")
     parser.add_argument("--websocket-port", type=int, default=6789, help="The port for the websocket server")
+    parser.add_argument("--info", action="store_true", help="Enable info logging")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO)
-    if args.debug:
+    if args.info:
+        logger.setLevel(logging.INFO)
+    elif args.debug:
         logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.WARNING)
     url_path = Path(__file__).parent / 'url.txt'
     if args.url is not None:
         url = args.url
