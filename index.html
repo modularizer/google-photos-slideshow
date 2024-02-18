@@ -3,39 +3,113 @@
 <head>
     <title>Slideshow</title>
     <style>
-        #slideshow {
-            max-width: 600px; /* Maximum image width */
-            min-height: 50vh; /* Maximum image height */
-            max-height: 50vh; /* Maximum image height */
-            width: auto; /* Scale width to maintain aspect ratio */
-            height: auto; /* Scale height to maintain aspect ratio */
-            display: block; /* Remove extra space below the image */
-            margin: 0 auto; /* Center the image */
+        body, html {
+            padding: 2em;
+            padding: 0;
+            height: 100%;
+            background-color: black;
+            color: white;
         }
-        body {
-            text-align: center; /* Center buttons and input below the image */
+
+        #container {
+            position: relative;
+            width: 96vw;
+            height: 70vh;
+            overflow: hidden;
+        }
+
+        #slideshow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%; /* Set width to fill the container */
+            height: 100%; /* Set height to fill the container */
+            object-fit: contain; /* Fit the image within the container without cropping */
+            opacity: 0; /* Start fully transparent */
+            transition: opacity 1s ease-in-out; /* Short transition effect for opacity */
+        }
+
+        #controls {
+            text-align: center;
+        }
+
+        #controls button, #controls input[type=range] {
+            margin: 0.5em;
+
+            padding: 0.5em;
+            border-radius: 0.5em;
+        }
+
+        #controls input[type=range] {
+            width: 80vw;
+        }
+
+        /* Media query for mobile devices */
+        @media (max-width: 1000px) {
+            #slideshow {
+                object-fit: cover; /* Cover the container area, may crop the image */
+            }
+            #controls button, #controls input[type=range] {
+                font-size: 2em;
+                margin-left: 2em;
+                margin-right: 2em;
+            }
+        }
+
+
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
-    <img id="slideshow" src="" alt="Slideshow Image">
-    <div>
+    <div id="container">
+        <img id="slideshow" src="" alt="Slideshow Image">
+    </div>
+    <div id="controls">
         <button onclick="action('previous')">Previous</button>
-        <button onclick="action('pause')">Pause</button>
-        <button onclick="action('play')">Play</button>
+        <button onclick="pause()">Pause</button>
+        <button onclick="play()" class="hidden">Play</button>
         <button onclick="action('next')">Next</button>
-        <input type="number" id="interval" value="1" min="0.1" max="4" step="0.1" onchange="action('speed', this.value)">
+        <br/>
+        <label for="speed">Speed:</label><input id="speed" type="range" min="1" max="10" value="5" oninput="action('speed', 10/this.value)">
     </div>
 
     <script>
-        var ws = new WebSocket("ws://localhost:6789/");
+        var ws = new WebSocket("ws://" + location.host + ":6789/");
         ws.onmessage = function(event) {
             var data = JSON.parse(event.data);
-            document.getElementById("slideshow").src = data.url;
+            var slideshow = document.getElementById("slideshow");
+
+            // Function to fade in the image
+            function fadeIn() {
+                slideshow.style.opacity = 1;
+            }
+
+            // Reset opacity and set up a slight delay before changing the src
+            slideshow.style.opacity = 0;
+            setTimeout(() => {
+                slideshow.src = data.url;
+                // Use the 'onload' event to ensure the image fades in after it's fully loaded
+                slideshow.onload = fadeIn;
+            }, 100); // Delay can be adjusted as needed
         };
+
         function action(action, value = null) {
             ws.send(JSON.stringify({action, value}));
         }
+        function pause() {
+            action('pause');
+            document.querySelector('button[onclick="pause()"]').classList.add('hidden');
+            document.querySelector('button[onclick="play()"]').classList.remove('hidden');
+        }
+        function play() {
+            action('play');
+            document.querySelector('button[onclick="play()"]').classList.add('hidden');
+            document.querySelector('button[onclick="pause()"]').classList.remove('hidden');
+        }
     </script>
+
 </body>
 </html>

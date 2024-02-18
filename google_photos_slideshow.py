@@ -3,6 +3,7 @@ import random
 import re
 import json
 import signal
+import socket
 import time
 import logging
 from pathlib import Path
@@ -20,7 +21,7 @@ class Slideshow:
     """Make a live slideshow from a publicly shared google photos album"""
     def __init__(self,
                  url,
-                 image_speed=1,
+                 image_duration=2,
                  refresh_interval=5,
                  regex=r'https:\/\/lh3\.googleusercontent\.com\/pw\/[a-zA-Z0-9_\-\/]+',
                  host='localhost',
@@ -38,7 +39,7 @@ class Slideshow:
         self.clients = set()
         self.paused = False
         self.last_refresh = time.time()
-        self.image_speed = image_speed  # Time in seconds for each image
+        self.image_duration = image_duration  # Time in seconds for each image
 
     async def _fetch_urls(self):
         """Fetch urls from the google photos link and store them in self.urls"""
@@ -81,8 +82,8 @@ class Slideshow:
         if self.urls and not self.paused:
             current_url = await self._next_url()
             await self._send_to_all(json.dumps({'url': current_url}))
-            logger.debug(f"sleeping for {self.image_speed} seconds")
-            await asyncio.sleep(self.image_speed)
+            logger.debug(f"sleeping for {self.image_duration} seconds")
+            await asyncio.sleep(self.image_duration)
 
     async def _register(self, websocket):
         """Register a new client to the list of clients"""
@@ -107,7 +108,7 @@ class Slideshow:
                 elif data['action'] == 'play':
                     self.paused = False
                 elif data['action'] == 'speed':
-                    self.image_speed = float(data['value'])
+                    self.image_duration = float(data['value'])
         finally:
             await self._unregister(websocket)
         await asyncio.sleep(0.1)
@@ -141,6 +142,11 @@ class Slideshow:
         p = f":{self.port}" if self.port != 80 else ""
         logger.info(f"Open your browser and go to http://{self.host}{p}")
 
+        local_ip = socket.gethostbyname(socket.gethostname())
+        logger.info(f"Or go to http://{local_ip}{p} if you are on the same network")
+
+        logger.info(f"Ctr+C to stop the server")
+
     def serve(self):
         # attach cleanup handler for graceful shutdown on Ctrl+C
         signal.signal(signal.SIGINT, lambda s, f: self.cleanup())
@@ -170,10 +176,10 @@ def main():
     parser = argparse.ArgumentParser(description="Make a live slideshow from a publicly shared google photos album")
     parser.add_argument("--port", type=int, default=80, help="The port for the http server")
     parser.add_argument("--url", help="The google photos album link", type=str, default=None)
-    parser.add_argument("--image-speed", type=float, default=1, help="Time in seconds for each image")
+    parser.add_argument("--image-duration", type=float, default=2, help="Time in seconds for each image")
     parser.add_argument("--refresh-interval", type=int, default=5, help="Time in seconds to refresh the album link")
     parser.add_argument("--regex", default=r'https:\/\/lh3\.googleusercontent\.com\/pw\/[a-zA-Z0-9_\-\/]+', help="The regex to match the image urls")
-    parser.add_argument("--host", default='localhost', help="The host to serve the slideshow")
+    parser.add_argument("--host", default='0.0.0.0', help="The host to serve the slideshow")
     parser.add_argument("--websocket-port", type=int, default=6789, help="The port for the websocket server")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
@@ -192,7 +198,7 @@ def main():
 
     # start the slideshow
     s = Slideshow(url,
-                  image_speed=args.image_speed,
+                  image_duration=args.image_duration,
                   refresh_interval=args.refresh_interval,
                   regex=args.regex,
                   host=args.host,
