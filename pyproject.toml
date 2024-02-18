@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "google-photos-slideshow"
-version = "0.0.2"
+version = "0.0.3"
 description = "A communal live photo slideshow for Google Photos"
 readme = "README.md"
 authors = [{ name = "Torin Halsted", email = "modularizer@gmail.com" }]

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Slideshow</title>
+    <title>Google Photos Slideshow</title>
     <style>
         body, html {
-            padding: 2em;
+            margin: 0;
             padding: 0;
             height: 100%;
             background-color: black;
@@ -77,6 +77,19 @@
     </div>
 
     <script>
+        function updateFavicon(imageUrl) {
+    let faviconLink = document.querySelector('link[rel="icon"]');
+    if (!faviconLink) {
+        faviconLink = document.createElement('link');
+        faviconLink.rel = 'icon';
+        document.head.appendChild(faviconLink);
+    }
+    faviconLink.href = imageUrl;
+}
+
+
+
+
         var ws = new WebSocket("ws://" + location.host + ":6789/");
         ws.onmessage = function(event) {
             var data = JSON.parse(event.data);
@@ -102,6 +115,7 @@
                 slideshow.style.opacity = 0;
                 setTimeout(() => {
                     slideshow.src = data.url;
+                    updateFavicon(data.url);
                     // Use the 'onload' event to ensure the image fades in after it's fully loaded
                     slideshow.onload = fadeIn;
                 }, 500); // Delay can be adjusted as needed
