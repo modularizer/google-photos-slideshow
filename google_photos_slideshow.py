@@ -256,7 +256,7 @@ class RegexSlideshow(Slideshow):
                 random.shuffle(new_urls)
 
                 # insert new urls at the current index
-                self.urls = self.urls[:self.current_index] + new_urls + self.urls[self.current_index:]
+                self.urls = self.urls[:self.current_index + 1] + new_urls + self.urls[self.current_index + 1:]
 
                 # pop removed urls, if they already passed, decrement the current index
                 for url in removed_urls:

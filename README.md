@@ -34,6 +34,7 @@ google-photos-slideshow --help
   * [x] Link to photo source
   * [ ] Autoplay videos
   * [ ] Add music
+    * [ ] spotify?
 #### Support for multiple photo sources
   * [x] Google Photos
     * [x] Public link only
