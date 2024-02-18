@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Google Photos Slideshow</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
     <style>
         /* Global Styles */
         body, html {
@@ -139,11 +140,47 @@
 
         </div>
         <button id="fullscreen-toggle" onclick="toggleFullscreen()"><i class="fas fa-expand"></i></button>
+        <button id="castButton" is="google-cast-button" style="height:2.5em"></button>
 
     </div>
 
 
     <script>
+        // Ensure the Cast SDK is loaded
+if (window.cast && chrome.cast && chrome.cast.isAvailable) {
+    initializeCastApi();
+} else {
+    window.__onGCastApiAvailable = function(isAvailable) {
+        if (isAvailable) {
+            initializeCastApi();
+        }
+    };
+}
+
+function initializeCastApi() {
+    window.cast.framework.CastContext.getInstance().setOptions({
+        receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+        autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+    });
+
+    const castButton = document.getElementById('castButton');
+    if (castButton) {
+        castButton.addEventListener('click', function() {
+            const castSession = window.cast.framework.CastContext.getInstance().getCurrentSession();
+            if (!castSession) {
+                window.cast.framework.CastContext.getInstance().requestSession().catch(function(error) {
+                    console.error('Error requesting cast session:', error);
+                });
+            }
+        });
+    } else {
+        console.error('Cast button not found');
+    }
+}
+
+
+
+
         class Slideshow{
             constructor(ws){
                 this.ws = ws;
@@ -157,6 +194,7 @@
                 this.sourceEl = document.getElementById('source');
                 this.containerEl = document.getElementById('container');
                 this.fullscreenToggleEl = document.getElementById('fullscreen-toggle');
+                this.castButtonEl = document.getElementById('castButton');
 
 
                 let faviconLink = document.querySelector('link[rel="icon"]');
@@ -181,6 +219,7 @@
                 this.toggleFullscreen = this.toggleFullscreen.bind(this);
                 this.onFullscreenChange = this.onFullscreenChange.bind(this);
                 this.onKeydown = this.onKeydown.bind(this);
+                this.castMedia = this.castMedia.bind(this);
 
 
                 this.fullscreenToggleEl.addEventListener('click', this.toggleFullscreen);
@@ -193,7 +232,6 @@
                 window.addEventListener('click', this.closeDropdown);
             }
             onmessage (event) {
-                console.warn(event.data);
                 var data = JSON.parse(event.data);
                 if (data.action === 'speed') {
                     this.setSpeed(data.speed);
@@ -207,7 +245,7 @@
                 } else if (data.action === 'source'){
                     this.sourceEl.href = data.source;
                 }else{
-                    this.setUrl(data.url);
+                    this.setUrl(data.url, data['content-type']);
                 }
             }
             updateFavicon(imageUrl) {
@@ -255,7 +293,7 @@
                 this.speedDropdownEl.style.display = this.speedDropdownEl.style.display === "block" ? "none" : "block";
             }
             closeDropdown(event) {
-                if (!event.target.matches('#speed-select')) {
+                if ((event===undefined) || (!event.target.matches('#speed-select'))) {
                     this.speedDropdownEl.style.display = "none";
                 }
             }
@@ -263,16 +301,37 @@
             fadeIn() {
                 this.slideshowEl.style.opacity = 1;
             }
-            setUrl(url){
+            setUrl(url, contentType = null) {
                 // Reset opacity and set up a slight delay before changing the src
                 this.slideshowEl.style.opacity = 0;
                 setTimeout(() => {
                     this.slideshowEl.src = url;
+                    this.castMedia(url, contentType);
                     this.updateFavicon(url);
                     // Use the 'onload' event to ensure the image fades in after it's fully loaded
                     this.fadeIn();
-                }, 500); // Delay can be adjusted as needed
+                }, 200); // Delay can be adjusted as needed
             }
+            castMedia(url, contentType = null) {
+                if (!window.cast){
+                    this.castButtonEl.classList.add('hidden');
+                    return;
+                }
+                this.castButtonEl.classList.remove('hidden');
+
+                const castSession = cast.framework.CastContext.getInstance().getCurrentSession();
+                if (castSession) {
+                    console.warn('casting', url, contentType);
+                    const mediaInfo = new chrome.cast.media.MediaInfo(url, contentType || 'image/jpeg');
+                    const request = new chrome.cast.media.LoadRequest(mediaInfo);
+                    castSession.loadMedia(request).then(
+                        () => console.log('Media loaded successfully'),
+                        (error) => console.error('Error loading media:', error)
+                    );
+
+                }
+            }
+
             toggleFullscreen() {
                 if (!document.fullscreenElement) {
                     this.containerEl.requestFullscreen().catch(err => {

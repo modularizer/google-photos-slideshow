@@ -65,7 +65,9 @@ google-photos-slideshow --help
   * [x] Page title from photo source
   * [x] Support fullscreen (and exit fullscreen)
   * [ ] preview carousel
-  * [ ] Chromecast support
+  * [x] Chromecast support
+    * [x] Works when on `http://localhost` or `http://127.0.0.1`
+    * [ ] Works when on `http://<local_ip>`
 #### Upload Options
   * [ ] Upload button
   * [ ] Drag and drop

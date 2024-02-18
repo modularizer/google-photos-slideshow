@@ -26,6 +26,7 @@ class Slideshow(ABC):
     default_host = 'localhost'
     default_websocket_port = 6789
     default_port = 80
+    default_support_casting = True
 
     def __init__(self,
                  url,
@@ -34,7 +35,9 @@ class Slideshow(ABC):
                 refresh_interval=default_refresh_interval,
                 host=default_host,
                 websocket_port=default_websocket_port,
-                port=default_port):
+                port=default_port,
+                 support_casting=default_support_casting
+                 ):
         self.host = host
         self.websocket_port = websocket_port
         self.port = port
@@ -42,6 +45,7 @@ class Slideshow(ABC):
         self.refresh_interval = refresh_interval
         self.urls = []
         self.last_url = []
+        self.content_types = {}
         self.current_index = 0
         self.clients = set()
         self.paused = False
@@ -49,9 +53,14 @@ class Slideshow(ABC):
         self.speed = 1
         self.image_duration = image_duration  # Time in seconds for each image
         self.title = title
+        self.support_casting = support_casting
 
     @abstractmethod
     async def _fetch_urls(self):
+        pass
+
+    @abstractmethod
+    async def _get_content_type(self, url):
         pass
 
     async def _next_url(self):
@@ -73,14 +82,15 @@ class Slideshow(ABC):
         """Send the next url to all connected clients"""
         if self.urls and not self.paused:
             current_url = await self._next_url()
-            await self._send_to_all(json.dumps({'url': current_url}))
+            await self._send_to_all(await self._url_package(current_url))
             logger.debug(f"sleeping for {self.image_duration} seconds")
             await asyncio.sleep(self.image_duration)
 
     async def _register(self, websocket):
         """Register a new client to the list of clients"""
         self.clients.add(websocket)
-        await websocket.send(json.dumps({'url': self.urls[self.current_index]}))
+        current_url = self.urls[self.current_index]
+        await websocket.send(await self._url_package(current_url))
         await websocket.send(json.dumps({'action': 'speed', 'speed': self.speed}))
         if self.paused:
             await websocket.send(json.dumps({'action': 'pause'}))
@@ -88,6 +98,16 @@ class Slideshow(ABC):
             await websocket.send(json.dumps({'action': 'play'}))
         await websocket.send(json.dumps({'action': 'source', 'source': self.url}))
         await websocket.send(json.dumps({'action': 'title', 'title': self.title}))
+
+    async def _url_package(self, url):
+        if self.support_casting:
+            content_type = self.content_types.get(url, None)
+            if content_type is None:
+                content_type = await self._get_content_type(url)
+                self.content_types[url] = content_type
+        else:
+            content_type = None
+        return json.dumps({'url': url, 'content-type': content_type})
 
     async def _unregister(self, websocket):
         """Remove a client from the list of clients"""
@@ -101,10 +121,12 @@ class Slideshow(ABC):
                 data = json.loads(message)
                 if data['action'] == 'next':
                     logger.info("next")
-                    await self._send_to_all(json.dumps({'url': await self._next_url()}))
+                    current_url = await self._next_url()
+                    await self._send_to_all(await self._url_package(current_url))
                 elif data['action'] == 'previous':
                     logger.info("previous")
-                    await self._send_to_all(json.dumps({'url': await self._previous_url()}))
+                    current_url = await self._previous_url()
+                    await self._send_to_all(await self._url_package(current_url))
                 elif data['action'] == 'pause':
                     if not self.paused:
                         self.paused = True
@@ -133,7 +155,10 @@ class Slideshow(ABC):
             # sleep
             await asyncio.sleep(0.1)
             if (time.time() - self.last_refresh) > self.refresh_interval:
-                await self._fetch_urls()
+                try:
+                    await self._fetch_urls()
+                except:
+                    logger.warning(f"Failed to fetch urls")
 
     async def serve_index(self, request):
         """Serve the index.html file."""
@@ -202,6 +227,7 @@ class RegexSlideshow(Slideshow):
         self.regex = regex
         self.parse_title = parse_title
         self.title_regex = title_regex
+        self.content_type_futures = {}
         super().__init__(url,
                          title=title, image_duration=image_duration, refresh_interval=refresh_interval,
                          host=host, websocket_port=websocket_port, port=port)
@@ -221,6 +247,7 @@ class RegexSlideshow(Slideshow):
                             await self._send_to_all(json.dumps({'action': 'title', 'title': self.title}))
                 urls = list(set(re.findall(self.regex, text)))
                 new_urls = [url for url in urls if url not in self.urls]
+                # await asyncio.gather(*(self.load_content_type(url) for url in new_urls))
                 if new_urls:
                     logger.info(f"found {len(new_urls)} new urls")
                 removed_urls = [url for url in self.urls if url not in urls]
@@ -238,6 +265,31 @@ class RegexSlideshow(Slideshow):
                             self.current_index -= 1
                         self.urls.remove(url)
                 self.last_refresh = time.time()
+
+    async def _get_content_type(self, url):
+        async with aiohttp.ClientSession() as session:
+            async with session.head(url) as response:
+                return response.headers.get('content-type', None)
+
+    async def load_content_type(self, url):
+        if url in self.content_types:
+            # return a future that is already done
+            f = asyncio.Future()
+            f.set_result(self.content_types[url])
+            return f
+        if url in self.content_type_futures:
+            # return the future
+            return self.content_type_futures[url]
+        # create a new future
+        future = asyncio.Future()
+        self.content_type_futures[url] = future
+        content_type = await self._get_content_type(url)
+        # set the result of the future
+        future.set_result(content_type)
+        self.content_types[url] = content_type
+        # remove the future from the dict
+        del self.content_type_futures[url]
+
 
 
 class GooglePhotosSlideshow(RegexSlideshow):
