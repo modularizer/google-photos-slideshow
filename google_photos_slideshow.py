@@ -10,6 +10,8 @@ import yaml
 from abc import ABC, abstractmethod
 from pathlib import Path
 import argparse
+import tkinter as tk
+from tkinter import simpledialog
 
 import aiohttp
 from aiohttp import web
@@ -17,6 +19,15 @@ import websockets
 
 logger = logging.getLogger("slideshow")
 logger.setLevel(logging.INFO)
+
+
+# Function to create a popup and get user input
+def tkinput(prompt):
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+    user_input = simpledialog.askstring("Input", prompt)
+    root.destroy()
+    return user_input
 
 
 class Default:
@@ -312,7 +323,7 @@ class Slideshow(ABC):
         local_ip = socket.gethostbyname(socket.gethostname())
         logger.warning(f"Or go to {self.server_ip_url} if you are on the same network")
 
-        logger.warning(f"Ctr+C to stop the server")
+        logger.warning(f"Ctrl + C to stop the server (or close the terminal)")
 
     def serve(self):
         # attach cleanup handler for graceful shutdown on Ctrl+C
@@ -602,8 +613,7 @@ class GooglePhotosSlideshow(RegexSlideshow):
     @classmethod
     def main(cls):
         d, cfg = cls.get_args()
-        print(d, cfg)
-        if d['url'] is None:
+        if d.get('url', None) is None:
             d['url'] = input("Enter the google photos album link: ")
         cls.save_cfg(d, cfg)
         # start the slideshow
@@ -611,7 +621,50 @@ class GooglePhotosSlideshow(RegexSlideshow):
         s.serve()
 
 
-def main(mode=None):
+def tray():
+    from pystray import Icon as icon, Menu as menu, MenuItem as item
+    from PIL import Image, ImageDraw
+    import asyncio
+
+    def create_image():
+        # Create a blank image for the icon
+        image = Image.new('RGB', (64, 64), color='white')
+        d = ImageDraw.Draw(image)
+        d.rectangle([8, 8, 56, 56], outline='black', fill='black')
+        return image
+
+    async def setup_system_tray(stop_event):
+        def on_quit(icon, item):
+            icon.stop()
+
+        icon_image = create_image()
+        icon_menu = menu(item('Quit', on_quit))
+        tray_icon = icon('test_icon', icon_image, 'App Title', icon_menu)
+
+        # Run the icon in a separate thread to avoid blocking
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, tray_icon.run)
+
+        # Wait for the icon to stop
+        await stop_event.wait()
+
+    setup_system_tray(asyncio.Event())
+    # import threading
+    # t = threading.Thread(target=setup_system_tray)
+    # t.start()
+
+
+def main(mode=None, support_tk=True):
+    tray()
+    import sys
+
+    # if no arguments are passed, use the tkinter input
+    if support_tk:
+        if not sys.argv[1:]:
+            global input
+            input = tkinput
+        elif "--cli" in sys.argv:
+            sys.argv.remove("--cli")
     if mode is None:
         cfg = Path(__file__).parent / 'config.yaml'
         if cfg.exists():

@@ -3,3 +3,5 @@ url.txt
 venv
 *.egg-info
 config.yaml
+build/
+*.spec
