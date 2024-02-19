@@ -3,16 +3,15 @@
 NOTE: this project is in no way affiliated with or sponsored by Google Photos.
 
 ## Quickstart
-### Install
+#### Install
 ```commandline
 pip install google-photos-slideshow
 ```
 
-### Run
+#### Run
 ```commandline
 google-photos-slideshow
 ```
-* Ctrl+C to stop the slideshow.
 * The first time you run this, it will prompt you for the public url to your google photos album.
 * Future runs will use the same album unless you specify a different one using `--url`.
 
@@ -24,6 +23,14 @@ Open a web browser and navigate to `http://localhost` to view the slideshow.
 google-photos-slideshow --help
 ```
 
+
+### Folder Slideshow
+You can also use a folder of photos on your computer as the source for the slideshow.
+```commandline
+folder-slideshow /path/to/folder
+```
+
+<hr/>
 ### Features
 #### Slideshow
   * [x] Play/Pause
@@ -42,22 +49,21 @@ google-photos-slideshow --help
   * [x] Google Photos
     * [x] Public link only
     * [ ] Maybe add support for authenticated access?
-  * [ ] Local Folder
+  * [x] Local Folder
+  * [x] Generic list of URLs (or file containing one URL per line)
   * [ ] Google Drive
   * [ ] OneDrive
   * [ ] Flickr
   * [ ] Instagram
   * [ ] Facebook
 #### Switching photo sources
-  * [x] cache url in untracked url.txt
-  * [ ] switch to generic config.yaml
+  * [x] switch to generic config.yaml
   * [ ] Change photo source live from UI
 #### Photo order
   * [x] Random
   * [x] New loads first if added during slideshow
   * [ ] Sort by date
   * [ ] Sort by filename
-  * [ ] Allow user to sort
   * [ ] Allow re-ordering from UI
 #### UI
   * [x] Dark Mode
