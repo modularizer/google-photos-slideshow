@@ -3,6 +3,7 @@
 NOTE: this project is in no way affiliated with or sponsored by Google Photos.
 
 ## Quickstart
+### Option 1 : Python install (preferred)
 #### Install
 ```commandline
 pip install google-photos-slideshow
@@ -15,16 +16,24 @@ google-photos-slideshow
 * The first time you run this, it will prompt you for the public url to your google photos album.
 * Future runs will use the same album unless you specify a different one using `--url`.
 
+### Option 2 : Executable
+Download the latest `.exe` file release from the Releases tab on GitHub (that way =>). Double click to run.
+
+NOTE: The executable is a simple but does not yet have the flexibility of the python package and could be harder to config.
+Really just meant as an easy Quickstart for users who don't have python installed.
+
+
+
 ### View
 Open a web browser and navigate to `http://localhost` to view the slideshow.
 
-### Options
+#### Options
 ```commandline
 google-photos-slideshow --help
 ```
 
 
-### Folder Slideshow
+#### Folder Slideshow
 You can also use a folder of photos on your computer as the source for the slideshow.
 ```commandline
 folder-slideshow /path/to/folder
