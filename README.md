@@ -30,7 +30,10 @@ google-photos-slideshow --help
   * [x] Speed
   * [x] Next/Previous
   * [x] Live Communal Controls
-  * [x] Live reload from source
+    * anyone viewing the slideshow can control it (pause/play, next/previous, speed control)
+  * [x] Live reload from source 
+    * you can add photos to the album as the slideshow is running and they will be added to the slideshow
+  * [x] Fullscreen mode
   * [x] Link to photo source
   * [ ] Autoplay videos
   * [ ] Add music

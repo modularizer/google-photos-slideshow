@@ -65,7 +65,12 @@ class Slideshow(ABC):
 
     async def _next_url(self):
         """Get the next url in the list of urls"""
-        self.current_index = (self.current_index + 1) % len(self.urls)
+        self.current_index = self.current_index + 1
+
+        # shuffle the urls if we reached the end
+        if self.current_index >= len(self.urls):
+            self.current_index = 0
+            random.shuffle(self.urls)
         return self.urls[self.current_index]
 
     async def _previous_url(self):
