@@ -17,10 +17,13 @@ google-photos-slideshow
 * Future runs will use the same album unless you specify a different one using `--url`.
 
 ### Option 2 : Executable
-Download the latest `.exe` file release from the Releases tab on GitHub (that way =>). Double click to run.
+* Download the latest `.exe` file release from the Releases tab on GitHub (that way =>). 
+* Double click to run.
+* The executable is a simple but does not yet have the flexibility of the python package and could be harder to config. 
+* Really just meant as an easy Quickstart for users who don't have python installed.
+* Uh-oh, Chrome might block the download because it's not a popular download. You can click "Keep" to keep the file but Windows Defender might still block it. Python install is probably easier for now...
 
-NOTE: The executable is a simple but does not yet have the flexibility of the python package and could be harder to config.
-Really just meant as an easy Quickstart for users who don't have python installed.
+
 
 
 
