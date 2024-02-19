@@ -88,8 +88,10 @@ folder-slideshow /path/to/folder
 #### Install
   * [x] pip install
   * [ ] Docker
-  * [ ] executable
-    * [ ] Basic UI for selecting photo source
+  * [x] executable
+    * [x] Basic UI for selecting photo source
+    * [ ] Better UI for selecting photo source
+    * [ ] Better way to re-config photo source other than modifying config.yaml
   * [ ] walkthough selecting a photo source
   * [ ] clear tutorial with photos of how to run each source
   * [ ] serve by hostname on local network

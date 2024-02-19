@@ -20,6 +20,12 @@ import websockets
 logger = logging.getLogger("slideshow")
 logger.setLevel(logging.INFO)
 
+default_cfg_path = Path(__file__).parent
+if "Temp" in str(default_cfg_path) or "tmp" in str(default_cfg_path):
+    default_cfg_path = Path.home() / ".config" / "google_photos_slideshow"
+default_cfg_path.mkdir(parents=True, exist_ok=True)
+default_cfg = default_cfg_path / 'config.yaml'
+
 
 # Function to create a popup and get user input
 def tkinput(prompt):
@@ -57,7 +63,7 @@ class Slideshow(ABC):
         # use argparse to parse command line arguments
 
         parser = argparse.ArgumentParser(description="Make a live slideshow from a publicly shared google photos album")
-        parser.add_argument("--cfg", help="A config to use as default values for all args", type=str, default=Path(__file__).parent / 'config.yaml')
+        parser.add_argument("--cfg", help="A config to use as default values for all args", type=str, default=default_cfg)
         parser.add_argument("--title", help="The title of the slideshow", type=str, default=Default(Slideshow.default_title))
         parser.add_argument("--port", type=int, default=Default(Slideshow.default_port), help="The port for the http server")
         parser.add_argument("--image-duration", type=float, default=Default(Slideshow.default_image_duration),
@@ -83,6 +89,7 @@ class Slideshow(ABC):
         parser = cls.arg_parser()
         args = parser.parse_args()
         if args.cfg is not None and args.cfg.exists():
+            logger.warning(f"Loading config from {args.cfg}")
             cfg = yaml.safe_load(args.cfg.read_text())
             for k, v in cfg.items():
                 if isinstance(getattr(args, k, Default(None)), Default):
@@ -103,6 +110,7 @@ class Slideshow(ABC):
         a = args.copy()
         a['mode'] = cls.mode
         if cfg is not None:
+            logger.warning(f"Saving config to {cfg}")
             with open(cfg, 'w') as f:
                 yaml.dump(a, f)
 
@@ -621,41 +629,8 @@ class GooglePhotosSlideshow(RegexSlideshow):
         s.serve()
 
 
-def tray():
-    from pystray import Icon as icon, Menu as menu, MenuItem as item
-    from PIL import Image, ImageDraw
-    import asyncio
-
-    def create_image():
-        # Create a blank image for the icon
-        image = Image.new('RGB', (64, 64), color='white')
-        d = ImageDraw.Draw(image)
-        d.rectangle([8, 8, 56, 56], outline='black', fill='black')
-        return image
-
-    async def setup_system_tray(stop_event):
-        def on_quit(icon, item):
-            icon.stop()
-
-        icon_image = create_image()
-        icon_menu = menu(item('Quit', on_quit))
-        tray_icon = icon('test_icon', icon_image, 'App Title', icon_menu)
-
-        # Run the icon in a separate thread to avoid blocking
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, tray_icon.run)
-
-        # Wait for the icon to stop
-        await stop_event.wait()
-
-    setup_system_tray(asyncio.Event())
-    # import threading
-    # t = threading.Thread(target=setup_system_tray)
-    # t.start()
-
 
 def main(mode=None, support_tk=True):
-    tray()
     import sys
 
     # if no arguments are passed, use the tkinter input
@@ -666,11 +641,13 @@ def main(mode=None, support_tk=True):
         elif "--cli" in sys.argv:
             sys.argv.remove("--cli")
     if mode is None:
-        cfg = Path(__file__).parent / 'config.yaml'
+        cfg = default_cfg
         if cfg.exists():
             mode = yaml.safe_load(cfg.read_text()).get('mode', None)
     if mode is None:
-        mode = input("Enter the mode to use (base, urls, folder, regex, google_photos): ")
+        mode = input("Enter the mode to use (base, urls, folder, regex, google_photos): [google_photos]").strip()
+        if not mode:
+            mode = "google_photos"
     if mode not in ["base", "urls", "folder", "regex", "google_photos"]:
         raise ValueError(f"Invalid mode: {mode}")
     classes = [Slideshow, GooglePhotosSlideshow, URLListSlideshow, FolderSlideshow, RegexSlideshow]
