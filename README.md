@@ -11,7 +11,7 @@ pip install google-photos-slideshow
 
 #### Run
 ```commandline
-google-photos-slideshow
+gpss
 ```
 * The first time you run this, it will prompt you for the public url to your google photos album.
 * Future runs will use the same album unless you specify a different one using `--url`.
