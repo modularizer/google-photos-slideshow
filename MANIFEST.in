@@ -1,5 +1,1 @@
-include README.md
-include LICENSE
-include requirements.txt
-include index.html
-include .gitignore
+include src/google_photos_slideshow/index.html

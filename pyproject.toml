@@ -26,6 +26,7 @@ Homepage = "https://github.com/modularizer/google-photos-slideshow"
 
 [project.scripts]
 google-photos-slideshow = "google_photos_slideshow:GooglePhotosSlideshow.main"
+gpss = "google_photos_slideshow:GooglePhotosSlideshow.main"
 folder-slideshow = "google_photos_slideshow:FolderSlideshow.main"
 slideshow = "google_photos_slideshow:main"
 

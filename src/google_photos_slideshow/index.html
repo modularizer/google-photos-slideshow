@@ -358,7 +358,7 @@ function initializeCastApi() {
 
         }
 
-        let ws = new WebSocket("ws://" + location.host + ":6789/");
+        let ws = new WebSocket("ws://" + location.hostname + ":6789/");
         let slideshow = new Slideshow(ws);
     </script>
 

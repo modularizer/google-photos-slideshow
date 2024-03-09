@@ -296,11 +296,6 @@ class Slideshow(ABC):
         index_path = Path(__file__).parent / 'index.html'
         return web.FileResponse(index_path)
 
-    async def serve_folder(self, request):
-        """Serve the index.html file."""
-        folder_path = Path(__file__).parent / 'folder'
-        return web.FileResponse(folder_path)
-
     def setup_routes(self, app):
         app.router.add_get('/', self.serve_index)
         # serve static folders
@@ -325,6 +320,7 @@ class Slideshow(ABC):
         runner = web.AppRunner(app)
         await runner.setup()
         site = web.TCPSite(runner, self.host, self.port)
+        print(f"Starting http server at {self.server_url}")
         await site.start()
         logger.warning(f"Open your browser and go to {self.server_url}")
 
@@ -653,6 +649,7 @@ def main(mode=None, support_tk=True):
     classes = [Slideshow, GooglePhotosSlideshow, URLListSlideshow, FolderSlideshow, RegexSlideshow]
     modes = {cls.mode: cls for cls in classes}
     cls = modes[mode]
+    print(f"Starting {cls.__name__}...")
     cls.main()
 
 
