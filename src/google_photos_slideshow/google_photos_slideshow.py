@@ -10,8 +10,6 @@ import yaml
 from abc import ABC, abstractmethod
 from pathlib import Path
 import argparse
-import tkinter as tk
-from tkinter import simpledialog
 
 import aiohttp
 from aiohttp import web
@@ -29,6 +27,8 @@ default_cfg = default_cfg_path / 'config.yaml'
 
 # Function to create a popup and get user input
 def tkinput(prompt):
+    import tkinter as tk
+    from tkinter import simpledialog
     root = tk.Tk()
     root.withdraw()  # Hide the main window
     user_input = simpledialog.askstring("Input", prompt)
