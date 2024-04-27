@@ -43,6 +43,7 @@ folder-slideshow /path/to/folder
 ```
 
 <hr/>
+
 ### Features
 #### Slideshow
   * [x] Play/Pause
