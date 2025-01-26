@@ -8,6 +8,10 @@ A **simple**, **live**, **communal** slideshow.
 * **fullscreen** mode
 * easy to **cast** fullscreen to a Chromecast and still control from your phone or computer
 * **dark mode** for viewing in a dimmed room
+  
+![gpss](https://github.com/user-attachments/assets/1bba8001-ed43-45d7-910c-37463d9acfcb)
+
+  
 
 ## Quickstart
 ### Option 1 : Python install (preferred)
