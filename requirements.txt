@@ -1,2 +1,2 @@
-aiohttp
-websockets
+aiohttp==3.11.11
+websockets==14.2

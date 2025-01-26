@@ -221,6 +221,16 @@ class Slideshow(ABC):
     async def _register(self, websocket):
         """Register a new client to the list of clients"""
         self.clients.add(websocket)
+        if not self.urls:
+            print("waiting for urls")
+            i = 0
+            while True:
+                if self.urls:
+                    break
+                await asyncio.sleep(0.1)
+                i += 1
+                if i > 100:
+                    raise TimeoutError("Failed to get urls")
         current_url = self.urls[self.current_index]
         await websocket.send(await self._url_package(current_url))
         await websocket.send(json.dumps({'action': 'speed', 'speed': self.speed}))
@@ -245,7 +255,7 @@ class Slideshow(ABC):
         """Remove a client from the list of clients"""
         self.clients.remove(websocket)
 
-    async def websocket_handler(self, websocket, path):
+    async def websocket_handler(self, websocket):
         """Handle incoming websocket connections"""
         await self._register(websocket)
         try:
@@ -347,22 +357,20 @@ class Slideshow(ABC):
 
         logger.warning(f"Ctrl + C to stop the server (or close the terminal)")
 
+    async def run_servers(self):
+        # Start WebSocket server
+        async with websockets.serve(self.websocket_handler, self.host, self.websocket_port):
+            # Also start aiohttp and slideshow tasks
+            await asyncio.gather(
+                self.start_http_server(),
+                self.run(),
+            )
+
     def serve(self):
         # attach cleanup handler for graceful shutdown on Ctrl+C
         signal.signal(signal.SIGINT, lambda s, f: self.cleanup())
         signal.signal(signal.SIGTERM, lambda s, f: self.cleanup())
-
-        logger.debug(f"Starting websocket server at {self.host}:{self.websocket_port}")
-        start_server = websockets.serve(self.websocket_handler, self.host, self.websocket_port)
-        # start the http server using asyncio
-        # Start both WebSocket and HTTP servers
-        asyncio.gather(
-            start_server,
-            self.start_http_server(),
-            self.run(),  # Assuming this is an async method related to your slideshow logic
-        )
-        loop = asyncio.get_event_loop()
-        loop.run_forever()
+        asyncio.run(self.run_servers())
 
     def cleanup(self):
         """Cleanup the servers"""
@@ -558,6 +566,11 @@ class RegexSlideshow(Slideshow):
         """Fetch urls from the google photos link and store them in self.urls"""
         async with aiohttp.ClientSession() as session:
             async with session.get(self.url) as response:
+                if response.status == 404:
+                    print("404 NOT FOUND: There was something wrong with the url")
+                    if self.url.startswith("http://photos.google.com/share/") and not "key=" in self.url:
+                        print("Somehow the url is missing the key= parameter which allows it to be shareable, try reloading your page or creating a public link")
+                    raise ValueError(f"404 NOT FOUND: {self.url}")
                 text = await response.text()
                 if self.parse_title:
                     title = re.search(self.title_regex, text)
@@ -699,4 +712,4 @@ def main(mode=None, support_tk=True):
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
