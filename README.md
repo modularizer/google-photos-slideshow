@@ -2,9 +2,12 @@
 
 NOTE: this project is in no way affiliated with or sponsored by Google Photos.
 
-A **simple** and **easy** way to view your Google Photos in a Live and collaborative communal slideshow.
-* Slideshow auto-updates as users add photos to your Google Photos album
-* Anyone viewing the slideshow can control it (pause/play, next/previous, speed control)
+A **simple**, **live**, **communal** slideshow.
+* **auto-updates** as photos are added to the album
+* **live communal controls** at http://localhost
+* **fullscreen** mode
+* easy to **cast** fullscreen to a Chromecast and still control from your phone or computer
+* **dark mode** for viewing in a dimmed room
 
 ## Quickstart
 ### Option 1 : Python install (preferred)
