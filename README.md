@@ -24,6 +24,23 @@ gpss
 * Future runs will use the same album unless you specify a different one using `--url` or use `gpss --fresh` to get the prompt again.
 * See `gpss --help` for more options.
 
+```python
+    👋 Welcome to Google Photos Slideshow
+         (not sponsored by Google)
+
+    📜 Instructions:
+        1️⃣ Get a shareable link to a Google Photos album 📸.
+            - Open Google Photos in your browser 🌐: https://photos.google.com/albums
+            - Open the photo album 📖 you want to display and click on it 👆.
+            - Copy the URL 🔗 from the address bar 📋.
+        2️⃣ 📋 Paste the URL 🔗 below to start the slideshow ✏️.
+            - [1;36mhttp://localhost will open and you can cast it to your 📺 TV.
+        3️⃣ Share the album with attendees 🤝, and they can add 📸 photos as the slideshow runs.
+        4️⃣ 🎉 Enjoy your slideshow! 🎥
+
+    When done, press Ctrl + C to stop 🛑.
+```
+
 ---
 
 ### Option 2 : Executable (if you don't want to install python)
