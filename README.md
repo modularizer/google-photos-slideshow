@@ -24,8 +24,8 @@ gpss
 * Future runs will use the same album unless you specify a different one using `--url` or use `gpss --fresh` to get the prompt again.
 * See `gpss --help` for more options.
 
-```python
-    👋 Welcome to Google Photos Slideshow
+```
+   👋 Welcome to Google Photos Slideshow
          (not sponsored by Google)
 
     📜 Instructions:
@@ -39,6 +39,14 @@ gpss
         4️⃣ 🎉 Enjoy your slideshow! 🎥
 
     When done, press Ctrl + C to stop 🛑.
+
+📋🔗 Enter the google photos album link you copied (or Enter ⏎ to go there 🌐↗️):
+📋🔗 Enter the google photos album link you copied: https://photos.google.com/share/ASPFADSOFAMMVsdkmdpaSDFa923masDFAasdfanoij028203jqwmomsdpafm
+
+Starting the slideshow...
+Open your browser and go to http://localhost if you are on this computer
+Or go to http://192.168.1.17 from another device on the same network (may or may not work depending on your firewall settings)
+Ctrl + C to stop the server (or close the terminal)
 ```
 
 ---
