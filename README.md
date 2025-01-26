@@ -34,7 +34,7 @@ gpss
             - Open the photo album 📖 you want to display and click on it 👆.
             - Copy the URL 🔗 from the address bar 📋.
         2️⃣ 📋 Paste the URL 🔗 below to start the slideshow ✏️.
-            - [1;36mhttp://localhost will open and you can cast it to your 📺 TV.
+            - http://localhost will open and you can cast it to your 📺 TV.
         3️⃣ Share the album with attendees 🤝, and they can add 📸 photos as the slideshow runs.
         4️⃣ 🎉 Enjoy your slideshow! 🎥
 

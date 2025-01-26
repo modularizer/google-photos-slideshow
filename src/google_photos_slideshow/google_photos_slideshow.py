@@ -645,7 +645,7 @@ class GooglePhotosSlideshow(RegexSlideshow):
             - Open the photo album 📖 you want to display and click on it 👆.
             - Copy the \033[1;32mURL\033[0m 🔗 from the address bar 📋.
         2️⃣ 📋 Paste the \033[1;32mURL\033[0m 🔗 below to start the slideshow ✏️.
-            - [1;36mhttp://localhost\033[0m will open and you can cast it to your 📺 TV.
+            - http://localhost will open and you can cast it to your 📺 TV.
         3️⃣ Share the album with attendees 🤝, and they can add 📸 photos as the slideshow runs.
         4️⃣ 🎉 Enjoy your slideshow! 🎥
         
