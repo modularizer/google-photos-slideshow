@@ -1,9 +1,11 @@
 import asyncio
+import platform
 import random
 import re
 import json
 import signal
 import socket
+import subprocess
 import time
 import logging
 import yaml
@@ -82,13 +84,14 @@ class Slideshow(ABC):
 
         parser.add_argument("--info", action="store_true", help="Enable info logging")
         parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+        parser.add_argument("--fresh", action="store_true", help="Ignore the cached config file")
         return parser
 
     @classmethod
     def get_args(cls):
         parser = cls.arg_parser()
         args = parser.parse_args()
-        if args.cfg is not None and args.cfg.exists():
+        if args.cfg is not None and args.cfg.exists() and not args.fresh:
             logger.warning(f"Loading config from {args.cfg}")
             cfg = yaml.safe_load(args.cfg.read_text())
             for k, v in cfg.items():
@@ -110,7 +113,7 @@ class Slideshow(ABC):
         a = args.copy()
         a['mode'] = cls.mode
         if cfg is not None:
-            logger.warning(f"Saving config to {cfg}")
+            logger.debug(f"Saving config to {cfg}")
             with open(cfg, 'w') as f:
                 yaml.dump(a, f)
 
@@ -279,6 +282,7 @@ class Slideshow(ABC):
     async def run(self):
         urls = await self._fetch_urls()
         await self._record_urls(urls)
+        self.launch()
         while True:
             logger.debug(f"updating clients: {self.current_index}/{len(self.urls)}")
             await self._update_clients()
@@ -290,6 +294,19 @@ class Slideshow(ABC):
                     await self._record_urls(urls)
                 except:
                     logger.warning(f"Failed to fetch urls")
+
+    def launch(self):
+        p = platform.platform()
+        s = self.server_url.replace("0.0.0.0", "localhost")
+        if "Windows" in p:
+            cmd = ["start", s]
+        elif "Linux" in p:
+            cmd = ["xdg-open", s]
+        elif "Darwin" in p:
+            cmd = ["open", s]
+        else:
+            return
+        subprocess.Popen(cmd, shell=True)
 
     async def serve_index(self, request):
         """Serve the index.html file."""
@@ -320,12 +337,13 @@ class Slideshow(ABC):
         runner = web.AppRunner(app)
         await runner.setup()
         site = web.TCPSite(runner, self.host, self.port)
-        print(f"Starting http server at {self.server_url}")
+        print(f"Starting the slideshow...")
         await site.start()
-        logger.warning(f"Open your browser and go to {self.server_url}")
 
-        local_ip = socket.gethostbyname(socket.gethostname())
-        logger.warning(f"Or go to {self.server_ip_url} if you are on the same network")
+        s = self.server_url.replace("0.0.0.0", "localhost")
+        logger.warning(f"Open your browser and go to {s} if you are on this computer")
+
+        logger.warning(f"Or go to {self.server_ip_url} from another device on the same network (may or may not work depending on your firewall settings)")
 
         logger.warning(f"Ctrl + C to stop the server (or close the terminal)")
 
@@ -334,7 +352,7 @@ class Slideshow(ABC):
         signal.signal(signal.SIGINT, lambda s, f: self.cleanup())
         signal.signal(signal.SIGTERM, lambda s, f: self.cleanup())
 
-        logger.warning(f"Starting websocket server at {self.host}:{self.websocket_port}")
+        logger.debug(f"Starting websocket server at {self.host}:{self.websocket_port}")
         start_server = websockets.serve(self.websocket_handler, self.host, self.websocket_port)
         # start the http server using asyncio
         # Start both WebSocket and HTTP servers
@@ -344,7 +362,6 @@ class Slideshow(ABC):
             self.run(),  # Assuming this is an async method related to your slideshow logic
         )
         loop = asyncio.get_event_loop()
-
         loop.run_forever()
 
     def cleanup(self):
@@ -618,7 +635,35 @@ class GooglePhotosSlideshow(RegexSlideshow):
     def main(cls):
         d, cfg = cls.get_args()
         if d.get('url', None) is None:
-            d['url'] = input("Enter the google photos album link: ")
+            print("""
+    👋 Welcome to \033[1;33mGoogle Photos Slideshow\033[0m
+         \033[3m(not sponsored by Google)\033[0m
+
+    📜 \033[1;34mInstructions:\033[0m
+        1️⃣ Get a shareable link to a \033[1;36mGoogle Photos\033[0m album 📸.
+            - Open \033[1;36mGoogle Photos\033[0m in your browser 🌐: https://photos.google.com/albums
+            - Open the photo album 📖 you want to display and click on it 👆.
+            - Copy the \033[1;32mURL\033[0m 🔗 from the address bar 📋.
+        2️⃣ 📋 Paste the \033[1;32mURL\033[0m 🔗 below to start the slideshow ✏️.
+            - [1;36mhttp://localhost\033[0m will open and you can cast it to your 📺 TV.
+        3️⃣ Share the album with attendees 🤝, and they can add 📸 photos as the slideshow runs.
+        4️⃣ 🎉 Enjoy your slideshow! 🎥
+        
+    \033[3mWhen done, press \033[1;31mCtrl + C\033[0m\033[3m to stop\033[0m 🛑.
+    """)
+
+            m = input(f'📋🔗 Enter the google photos album link you copied (or Enter ⏎ to go there 🌐↗️): ')
+            mtest = m.strip().lower()
+            if mtest == "o" or not mtest:
+                import webbrowser
+                webbrowser.open("https://photos.google.com/albums")
+                m = input(f'📋🔗 Enter the google photos album link you copied: ')
+            m = m.strip().replace('"', '').replace("'", '')
+            if not m.startswith("http"):
+                m = "https://" + m
+
+            print("")
+            d['url'] = m
         cls.save_cfg(d, cfg)
         # start the slideshow
         s = cls(**d)
