@@ -15,12 +15,12 @@ A **simple**, **live**, **communal** slideshow.
 
 ## Quickstart
 ### Option 1 : Python install (preferred)
-#### Install
+##### Install
 ```commandline
 pip install google-photos-slideshow
 ```
 
-#### Run
+##### Run
 ```commandline
 gpss
 ```
@@ -54,24 +54,7 @@ Ctrl + C to stop the server (or close the terminal)
 ```
 
 ---
-
-### Option 2 : Executable (if you don't want to install python)
-* Download the latest `.exe` file release from the Releases tab on GitHub (that way =>). 
-* Double click to run.
-* The executable is a simple but does not yet have the flexibility of the python package and could be harder to config. 
-* Really just meant as an easy Quickstart for users who don't have python installed.
-* Uh-oh, Chrome might block the download because it's not a popular download. You can click "Keep" to keep the file but Windows Defender might still block it. Python install is probably easier for now...
-
-
-
-### View
-Open a web browser and navigate to `http://localhost` to view the slideshow.
-
-#### Options
-```commandline
-google-photos-slideshow --help
-```
-
+### Other Uses
 
 #### Folder Slideshow
 You can also use a folder of photos on your computer as the source for the slideshow.
