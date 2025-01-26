@@ -14,7 +14,6 @@ A **simple**, **live**, **communal** slideshow.
   
 
 ## Quickstart
-### Option 1 : Python install (preferred)
 ##### Install
 ```commandline
 pip install google-photos-slideshow
