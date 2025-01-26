@@ -6,7 +6,6 @@ A **simple** and **easy** way to view your Google Photos in a Live and collabora
 * Slideshow auto-updates as users add photos to your Google Photos album
 * Anyone viewing the slideshow can control it (pause/play, next/previous, speed control)
 
-
 ## Quickstart
 ### Option 1 : Python install (preferred)
 #### Install
@@ -19,17 +18,17 @@ pip install google-photos-slideshow
 gpss
 ```
 * The first time you run this, it will prompt you for the public url to your google photos album.
-* Future runs will use the same album unless you specify a different one using `--url`.
+* Future runs will use the same album unless you specify a different one using `--url` or use `gpss --fresh` to get the prompt again.
+* See `gpss --help` for more options.
 
 ---
+
 ### Option 2 : Executable (if you don't want to install python)
 * Download the latest `.exe` file release from the Releases tab on GitHub (that way =>). 
 * Double click to run.
 * The executable is a simple but does not yet have the flexibility of the python package and could be harder to config. 
 * Really just meant as an easy Quickstart for users who don't have python installed.
 * Uh-oh, Chrome might block the download because it's not a popular download. You can click "Keep" to keep the file but Windows Defender might still block it. Python install is probably easier for now...
-
-
 
 
 
